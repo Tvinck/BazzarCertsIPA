@@ -1,0 +1,6 @@
+dist/
+*.zip
+*.ipa
+*.p12
+*.mobileprovision
+.DS_Store

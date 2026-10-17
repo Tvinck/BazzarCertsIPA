@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>appTitle</key>
+	<string>YMNight</string>
+	<key>subtitle</key>
+	<string>Всё о сборке — в одном месте</string>
+	<key>buttonTitle</key>
+	<string>Узнать больше о приложении</string>
+	<key>websiteURL</key>
+	<string>https://bazzar-serts.shop/ipa/ymhight</string>
+	<key>certificateTitle</key>
+	<string>Купить сертификат</string>
+	<key>certificateURL</key>
+	<string>https://bazzar-serts.shop/#tariffs</string>
+	<key>developer</key>
+	<string>BAZZAR Certs</string>
+	<key>footer</key>
+	<string>Сделано с любовью.</string>
+</dict>
+</plist>

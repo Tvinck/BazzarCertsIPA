@@ -1,0 +1,45 @@
+name: Build BAZZAR Panel
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'BAZZARPanel.*'
+      - 'build-macos.sh'
+      - '.github/workflows/build-ios.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Record build environment
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Build library
+        run: bash build-macos.sh
+      - name: Inspect result
+        run: |
+          set -euo pipefail
+          plutil -lint dist/BAZZARPanel.plist
+          xcrun lipo -verify_arch arm64 dist/BAZZARPanel.dylib
+          xcrun otool -L dist/BAZZARPanel.dylib > dist/dependencies.txt
+          xcrun otool -l dist/BAZZARPanel.dylib > dist/load-commands.txt
+          xcrun nm -gU dist/BAZZARPanel.dylib > dist/exports.txt
+          grep -q _BAZZARPresentPanel dist/exports.txt
+          git rev-parse HEAD > dist/source-commit.txt
+          xcodebuild -version > dist/build-environment.txt
+          xcrun --sdk iphoneos --show-sdk-version >> dist/build-environment.txt
+          cd dist
+          shasum -a 256 BAZZARPanel.dylib BAZZARPanel.plist > SHA256SUMS.txt
+      - name: Upload library and checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: BAZZARPanel-ios-arm64-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
