@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           plutil -lint dist/BAZZARPanel.plist
-          xcrun lipo -verify_arch arm64 dist/BAZZARPanel.dylib
+          xcrun lipo dist/BAZZARPanel.dylib -verify_arch arm64
           xcrun otool -L dist/BAZZARPanel.dylib > dist/dependencies.txt
           xcrun otool -l dist/BAZZARPanel.dylib > dist/load-commands.txt
           xcrun nm -gU dist/BAZZARPanel.dylib > dist/exports.txt
