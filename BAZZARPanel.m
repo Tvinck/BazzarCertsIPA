@@ -21,7 +21,7 @@ static BOOL BZRAnimated(void) {
     return theme >= 0 && theme <= 2 ? theme : 0;
 }
 - (void)applyTheme {
-    UIUserInterfaceStyle style = @[@(UIUserInterfaceStyleUnspecified), @(UIUserInterfaceStyleLight), @(UIUserInterfaceStyleDark)][self.theme].integerValue;
+    UIUserInterfaceStyle style = self.theme == 1 ? UIUserInterfaceStyleLight : self.theme == 2 ? UIUserInterfaceStyleDark : UIUserInterfaceStyleUnspecified;
     self.navigationController.overrideUserInterfaceStyle = style;
     self.overrideUserInterfaceStyle = style;
 }
