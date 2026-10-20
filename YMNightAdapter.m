@@ -3,7 +3,9 @@
 #import <CommonCrypto/CommonDigest.h>
 
 // Opt-in adapter for one reviewed arm64 YMNight build. No audio/network hooks.
-static IMP BZROriginalLayout;
+static IMP BZROriginalWindow;
+static BOOL BZRInstalled;
+static id BZRActiveObserver;
 static void BZRLabel(UIView *view) {
     if ([view isKindOfClass:UILabel.class]) {
         UILabel *label = (UILabel *)view;
@@ -18,9 +20,9 @@ static void BZRLabel(UIView *view) {
         view.accessibilityLabel = @"О приложении BAZZAR";
     for (UIView *child in view.subviews) BZRLabel(child);
 }
-static void BZRLayout(id self, SEL selector) {
-    ((void(*)(id,SEL))BZROriginalLayout)(self,selector);
-    BZRLabel(self);
+static void BZRWindow(UIView *self, SEL selector) {
+    ((void(*)(id,SEL))BZROriginalWindow)(self,selector);
+    if (self.window) BZRLabel(self);
 }
 static void BZRTapped(UIView *self, SEL selector) {
     UIViewController *presenter = nil;
@@ -48,20 +50,44 @@ static BOOL BZRMatchesImage(Class cls) {
     return [hash isEqualToString:@"61eaa48eea78439cabad815fc6cc47ac70c444777f048a1c561a4d7e8141ac97"];
 }
 static void BZRInstall(void) {
+    if (BZRInstalled || UIApplication.sharedApplication.applicationState != UIApplicationStateActive) return;
     if (![[NSBundle.mainBundle bundleIdentifier] isEqualToString:@"ru.yandex.mobile.music"]) return;
     if (![NSBundle.mainBundle pathForResource:@"BAZZARPanel" ofType:@"plist"]) return;
-    Class cls = NSClassFromString(@"YMLinkRow");
-    if (!cls || ![cls isSubclassOfClass:UIView.class] || !BZRMatchesImage(cls)) return;
+    Class cls = objc_getClass("YMLinkRow");
+    BOOL isView = NO;
+    for (Class parent = cls; parent; parent = class_getSuperclass(parent))
+        if (parent == objc_getClass("UIView")) { isView = YES; break; }
+    if (!isView || !BZRMatchesImage(cls)) return;
     Method tap = class_getInstanceMethod(cls,@selector(tapped));
-    Method layout = class_getInstanceMethod(cls,@selector(layoutSubviews));
-    if (!tap || !layout || method_getNumberOfArguments(tap) != 2) return;
-    char result[16]; method_getReturnType(tap,result,sizeof(result));
+    Method window = class_getInstanceMethod(cls,@selector(didMoveToWindow));
+    if (!tap || !window || method_getNumberOfArguments(tap) != 2 ||
+        method_getNumberOfArguments(window) != 2) return;
+    char result[16] = {0}; method_getReturnType(tap,result,sizeof(result));
     if (strcmp(result,"v")) return;
-    BZROriginalLayout = method_getImplementation(layout);
-    // Add an override to this class; never modify UIView's inherited method.
-    if (!class_addMethod(cls,@selector(layoutSubviews),(IMP)BZRLayout,method_getTypeEncoding(layout))) return;
+    method_getReturnType(window,result,sizeof(result));
+    if (strcmp(result,"v")) return;
+    BZROriginalWindow = method_getImplementation(window);
+    // Never change UIView's inherited implementation or hook the layout pass.
+    class_replaceMethod(cls,@selector(didMoveToWindow),(IMP)BZRWindow,method_getTypeEncoding(window));
     class_replaceMethod(cls,@selector(tapped),(IMP)BZRTapped,method_getTypeEncoding(tap));
+    BZRInstalled = YES;
+    NSLog(@"[BAZZAR] Adapter R3 installed after activation");
 }
 __attribute__((constructor)) static void BZRStartAdapter(void) {
-    dispatch_async(dispatch_get_main_queue(), ^{ BZRInstall(); });
+    dispatch_async(dispatch_get_main_queue(), ^{
+        @autoreleasepool {
+            NSDictionary *config = [NSDictionary dictionaryWithContentsOfFile:
+                [NSBundle.mainBundle pathForResource:@"BAZZARPanel" ofType:@"plist"]];
+            if ([config[@"disableAdapter"] boolValue]) {
+                NSLog(@"[BAZZAR] Diagnostic mode: adapter disabled");
+                return;
+            }
+            BZRActiveObserver = [NSNotificationCenter.defaultCenter
+                addObserverForName:UIApplicationDidBecomeActiveNotification object:nil
+                queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+                    dispatch_async(dispatch_get_main_queue(), ^{ BZRInstall(); });
+                }];
+            BZRInstall();
+        }
+    });
 }

@@ -31,6 +31,9 @@ jobs:
           xcrun lipo dist/BAZZARPanel-YMNight.dylib -verify_arch arm64
           xcrun otool -L dist/BAZZARPanel.dylib > dist/dependencies.txt
           xcrun otool -l dist/BAZZARPanel.dylib > dist/load-commands.txt
+          xcrun otool -L dist/BAZZARPanel-YMNight.dylib > dist/adapter-dependencies.txt
+          xcrun otool -l dist/BAZZARPanel-YMNight.dylib > dist/adapter-load-commands.txt
+          xcrun nm -u dist/BAZZARPanel-YMNight.dylib > dist/adapter-imports.txt
           xcrun nm -gU dist/BAZZARPanel.dylib > dist/exports.txt
           grep -q _BAZZARPresentPanel dist/exports.txt
           git rev-parse HEAD > dist/source-commit.txt
